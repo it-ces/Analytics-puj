@@ -2,6 +2,7 @@
 
 from sklearn.base import BaseEstimator, TransformerMixin
 import pandas as pd
+import numpy as np
 
 
 def reduce_categories(X, min_percent):
@@ -12,7 +13,7 @@ def reduce_categories(X, min_percent):
         to_replace = [key for key in cats if cats[key]<min_percent]  
          # Convert categories that not appear at least minpercent to <Another>
         X_transformed[var] = X_transformed[var].replace(to_replace=to_replace, value='Another')
-    return X_transformed.to_numpy()
+    return X_transformed
       
 class reduceCategories(BaseEstimator, TransformerMixin):
     def __init__(self, min_percent=0.05):
@@ -55,6 +56,31 @@ class drop_ColumnsNan(BaseEstimator, TransformerMixin):
         X_transformed = X.copy()
         return drop_colNaN(pd.DataFrame(X_transformed), self.min_percent)
 
+
+
+def val_to_str(val):
+    if val==np.nan:
+        pass
+    else:
+        val  = str(val)
+    return val
+
+def cats_to_str(X, y=None):
+    X_cat = X.copy()
+    for col in X_cat: 
+        X_cat[col] = X_cat[col].apply(lambda x: val_to_str(x))
+    return X_cat
+
+
+class categ_str(BaseEstimator, TransformerMixin):
+    def __init__(self):
+        pass
+
+    def fit(self, X, y=None):
+        return self
+
+    def transform(self, X, y=None):
+        return cats_to_str(pd.DataFrame(X))
 
 
 ############################ Preprocess...

@@ -1,10 +1,10 @@
 # Models
-
 import numpy as np
 from sklearn.linear_model import LogisticRegression
 from sklearn.ensemble import AdaBoostClassifier
 from sklearn.base import BaseEstimator, ClassifierMixin
 from sklearn.neighbors import KNeighborsClassifier
+from sklearn.ensemble import RandomForestClassifier
 from sklearn.svm import SVC
 from sklearn.svm import LinearSVC
 from sklearn.model_selection import RepeatedStratifiedKFold
@@ -15,8 +15,6 @@ from sklearn.metrics import accuracy_score
 from sklearn.metrics import recall_score
 
 
-
-
 def help():
     print('Models with grid search and stratified K-folds...')
 
@@ -24,8 +22,8 @@ def help():
 # Support Vector Machine
 def grid_SVC(X_train, y_train, performance_metric='f1', resultsGrid=False):
     model = SVC()
-    C = np.linspace(0.000001 , 1000, 20)
-    kernels = ['linear', 'poly', 'rbf']
+    C = np.linspace(0.000001 , 1000, 5)
+    kernels = ['poly', 'rbf']
     gamma = ['scale']
     grid = dict(C = C, kernel = kernels, gamma = gamma)
     cv = RepeatedStratifiedKFold(n_splits=5, n_repeats=1, random_state=1)
@@ -36,30 +34,39 @@ def grid_SVC(X_train, y_train, performance_metric='f1', resultsGrid=False):
         return grid_result.cv_results_
     else:
         return  grid_result.best_estimator_
+    
+
+# To add in pipeline
+class GridSearchSVC(BaseEstimator, ClassifierMixin):
+    def __init__(self):
+        pass
+
+    def fit(self, X, y):
+        self.model = grid_SVC(X, y)  
+        return self
+
+    def hypers(self):
+        params = self.model.get_params()  
+        return params
+
+    def predict(self, X):
+        return self.model.predict(X)
+
+    def predict_proba(self, X):
+        return self.model.predict_proba(X)  
 
 
 
-# For large data sets SVM
-def grid_linearSVC(X_train, y_train, performance_metric='f1'):
-    model = LinearSVC()
-    penalty = ["l1", "l2"]
-    C = np.linspace(0.01 , 1, 3)
-    grid = dict(C = C, penalty = penalty)
-    cv = RepeatedStratifiedKFold(n_splits=5, n_repeats=1, random_state=1)
-    grid_search = GridSearchCV(estimator=model, param_grid=grid, n_jobs=-1, cv=cv,
-                           scoring=performance_metric,error_score='raise')
-    grid_result = grid_search.fit(X_train, y_train)
-    return  grid_result.best_estimator_
 
 
 
 # K-Nearest Neighborhood
 def grid_KNN(X_train, y_train, performance_metric='f1', resultsGrid=False):
     model = KNeighborsClassifier()
-    n_neighbors = np.arange(1,100,1) # from K to N in steps of z
+    n_neighbors = np.arange(1,10,1) # from K to N in steps of z
     weights = ["uniform", "distance"]
     grid = dict(n_neighbors = n_neighbors, weights = weights)
-    cv = RepeatedStratifiedKFold(n_splits=5, n_repeats=3, random_state=1)
+    cv = RepeatedStratifiedKFold(n_splits=5, n_repeats=1, random_state=1)
     grid_search = GridSearchCV(estimator=model, param_grid=grid, n_jobs=-1, cv=cv,
                            scoring=performance_metric,error_score='raise')
     grid_result = grid_search.fit(X_train, y_train)
@@ -69,29 +76,12 @@ def grid_KNN(X_train, y_train, performance_metric='f1', resultsGrid=False):
         return  grid_result.best_estimator_
 
 
-# Logistic Regression
-def grid_lr(X_train, y_train):
-    model = LogisticRegression(random_state=666, max_iter=1000)
-    class_weight =  [{0:0.05, 1:0.95}, {0:0.1, 1:0.9}, {0:0.2, 1:0.8}]
-    solvers = ['liblinear']
-    penalty = ['l2','l1']
-    c_values = [ 10, 1.0, 0.1, 0.01, 0.001, ]
-    grid = dict(solver=solvers,penalty=penalty,C=c_values, class_weight= class_weight)
-    cv = RepeatedStratifiedKFold(n_splits=10, n_repeats=3, random_state=1)
-    grid_search = GridSearchCV(estimator=model, param_grid=grid, n_jobs=-1, cv=cv,
-                           scoring='f1',error_score='raise')
-    grid_result = grid_search.fit(X_train, y_train)
-    return  grid_result.best_estimator_
-
-
-
-
 # To add in pipeline
-class GridSearchLogisticRegression(BaseEstimator, ClassifierMixin):
+class GridSearchKNN(BaseEstimator, ClassifierMixin):
     def __init__(self):
         pass
     def fit(self, X, y):
-        self.model = grid_lr(X, y)
+        self.model = grid_KNN(X, y)
         return self
     def hypers(self):
         params = self.model.best_estimator_.get_params()
@@ -101,6 +91,40 @@ class GridSearchLogisticRegression(BaseEstimator, ClassifierMixin):
     def predict_proba(self, X):
         return self.model.predict_proba(X)
 
+
+# Logistic Regression
+def grid_lr(X_train, y_train):
+    model = LogisticRegression(random_state=666, max_iter=1000)
+    solvers = ['liblinear']
+    penalty = ['l2','l1']
+    c_values = [ 10, 1.0, 0.1, 0.01, 0.001, ]
+    grid = dict(solver=solvers,penalty=penalty,C=c_values)
+    cv = RepeatedStratifiedKFold(n_splits=5, n_repeats=1, random_state=1)
+    grid_search = GridSearchCV(estimator=model, param_grid=grid, n_jobs=-1, cv=cv,
+                           scoring='roc_auc',error_score='raise')
+    grid_result = grid_search.fit(X_train, y_train)
+    return  grid_result.best_estimator_
+
+
+
+# To add in pipeline
+class GridSearchLogisticRegression(BaseEstimator, ClassifierMixin):
+    def __init__(self):
+        pass
+
+    def fit(self, X, y):
+        self.model = grid_lr(X, y)  
+        return self
+
+    def hypers(self):
+        params = self.model.get_params()  
+        return params
+
+    def predict(self, X):
+        return self.model.predict(X)
+
+    def predict_proba(self, X):
+        return self.model.predict_proba(X)
 
 
 
@@ -112,50 +136,58 @@ def grid_RandomForest(X_train, y_train):
   max_depth = [2,3,4]
   grid = dict(n_estimators = n_estimators, criterion = criterion,  
               min_samples_split = min_samples_split, max_depth = max_depth)
-  cv = RepeatedStratifiedKFold(n_splits=10, n_repeats=3, random_state=1)
+  cv = RepeatedStratifiedKFold(n_splits=5, n_repeats=1, random_state=1)
   grid_search = GridSearchCV(estimator=model, param_grid=grid, n_jobs=-1, cv=cv,
-                            scoring='f1',error_score='raise')
+                            scoring='roc_auc',error_score='raise')
   grid_result = grid_search.fit(X_train, y_train)
   return  grid_result.best_estimator_
 
 class GridSearchRandomForest(BaseEstimator, ClassifierMixin):
     def __init__(self):
         pass
+
     def fit(self, X, y):
-        self.model = grid_lr(X, y)
+        self.model = grid_RandomForest(X, y)  
         return self
+
     def hypers(self):
-        params = self.model.best_estimator_.get_params()
+        params = self.model.get_params()  
         return params
+
     def predict(self, X):
         return self.model.predict(X)
+
     def predict_proba(self, X):
         return self.model.predict_proba(X)
 
 
 
 def grid_Adaboost(X_train, y_train):
-  model = AdaBoostClassifier(random_state=1)
-  n_estimators = [2,15,35, 50, 70 ,100]
-  learning_rate = np.linspace(0.01,10, 20)
-  grid = dict(n_estimators = n_estimators, learning_rate = learning_rate)
-  cv = RepeatedStratifiedKFold(n_splits=10, n_repeats=3, random_state=1)
-  grid_search = GridSearchCV(estimator=model, param_grid=grid, n_jobs=-1, cv=cv,
-                            scoring='f1',error_score='raise')
-  grid_result = grid_search.fit(X_train, y_train)
-  return  grid_result.best_estimator_
+    model = AdaBoostClassifier(random_state=1)
+    n_estimators = [2, 15, 35, 50, 70, 100]
+    learning_rate = np.linspace(0.01, 1, 10)
+    grid = dict(n_estimators=n_estimators, learning_rate=learning_rate)
+    cv = RepeatedStratifiedKFold(n_splits=5, n_repeats=1, random_state=1)
+    grid_search = GridSearchCV(estimator=model, param_grid=grid, n_jobs=-1, cv=cv,
+                               scoring='roc_auc', error_score='raise')
+    grid_result = grid_search.fit(X_train, y_train)
+    return grid_result.best_estimator_
 
 class GridSearchAdaBoost(BaseEstimator, ClassifierMixin):
     def __init__(self):
         pass
+
     def fit(self, X, y):
-        self.model = grid_lr(X, y)
+        self.model = grid_Adaboost(X, y)  
         return self
+
     def hypers(self):
-        params = self.model.best_estimator_.get_params()
+        params = self.model.get_params()  
         return params
+
     def predict(self, X):
         return self.model.predict(X)
+
     def predict_proba(self, X):
         return self.model.predict_proba(X)
 
@@ -167,8 +199,6 @@ def especificityF(y_true, y_pred):
     return tn / (tn + fp)
 
 especificity = make_scorer(especificityF, greater_is_better=True)
-
-
 
 
 ###################################################################
