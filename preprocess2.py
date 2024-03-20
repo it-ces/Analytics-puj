@@ -101,3 +101,26 @@ def classify_vars(df):
             else: 
                 normal.append(t)
     return categorial, nonormal, normal
+
+
+#### Adding more functions...
+
+
+# This could help us to identify where a numerical variable
+# is suspect of be categorical...
+def is_float(num):
+    num = str(num)
+    flag  = False
+    for index  in range(len(num)-1):
+        if num[index]==',' or num[index]=='.' and num[index+1]!='0':
+            flag = True
+    return flag
+
+def InferCategorical(df,var):
+    Flag = True
+    floats = df[var].apply(lambda x: is_float(x)).sum()
+    range  = df[var].max() - df[var].min()
+    if floats>10 and range>10:
+        Flag=False
+    return Flag
+
