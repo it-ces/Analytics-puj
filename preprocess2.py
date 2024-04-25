@@ -124,3 +124,16 @@ def InferCategorical(df,var):
         Flag=False
     return Flag
 
+
+def is_binary(df_, nums):
+    variables = []
+    for var in nums:
+        flag = True
+        unique = df_[var].unique()
+        for value in unique:
+            if value not in [0, 1, np.nan, 0.0, 1.0]:
+                flag = False
+        if flag == True:
+            variables.append(var)
+    return variables
+
