@@ -10,7 +10,7 @@ def reduce_categories(X, min_percent):
     X_transformed = X.copy()
     for var in X_transformed.columns:
         cats = X_transformed[var].value_counts(normalize=True).to_dict()
-        to_replace = [key for key in cats if cats[key]<min_percent]  
+        to_replace = [key for key in cats if cats[key]<min_percent and key!='nan']  
          # Convert categories that not appear at least minpercent to <Another>
         X_transformed[var] = X_transformed[var].replace(to_replace=to_replace, value='Another')
     return X_transformed
