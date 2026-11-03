@@ -1,5 +1,4 @@
-Edgar Joel Pardo 
-David Hernando Ávila
+
 Iván Andrés Trujillo Abella
 
 
